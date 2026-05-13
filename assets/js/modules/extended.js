@@ -312,8 +312,10 @@ const ExtendedModule = {
 
   getCurrentPath() {
     const pathname = window.location.pathname.replace(/\\/g, '/');
-    const parts = pathname.split('/admin/').filter(Boolean);
-    const current = parts[parts.length - 1] || '';
+    const normalizedPath = pathname
+      .replace(/^\/admin\/admin\//, '/')
+      .replace(/^\/admin\//, '/');
+    const current = normalizedPath.replace(/^\/+/, '') || '';
     return current.replace(/^admin\//, '');
   },
 
