@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>服务子项目配置详情 - 校园兼职服务平台管理后台</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/reset.css">
+  <link rel="stylesheet" href="../assets/css/base.css">
+  <link rel="stylesheet" href="../assets/css/layout.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <link rel="stylesheet" href="../assets/css/pages.css">
+  <style>
+    .prd-badge {
+      position: absolute;
+      display: inline-block;
+      vertical-align: top;
+      background: rgb(250, 173, 20);
+      color: #fff;
+      font-size: 10px;
+      font-weight: bold;
+      line-height: 14px;
+      padding: 0 4px;
+      border-radius: 2px;
+      border: none;
+      cursor: pointer;
+      z-index: 9999;
+    }
+
+    .prd-popover {
+      position: absolute;
+      background: #f0efef;
+      border-radius: 4px;
+      width: 450px;
+      max-width: calc(100vw - 24px);
+      max-height: min(680px, calc(100vh - 24px));
+      box-shadow: 0 12px 34px rgba(0, 0, 0, .18);
+      z-index: 9999;
+      overflow: hidden;
+    }
+
+    .prd-popover-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 40px 12px 14px;
+      border-bottom: 1px solid #d8d8d8;
+      cursor: move;
+      user-select: none;
+    }
+
+    .prd-popover-header .prd-badge-inline {
+      display: inline-block;
+      vertical-align: top;
+      background: rgb(250, 173, 20);
+      color: #fff;
+      font-size: 10px;
+      font-weight: bold;
+      line-height: 14px;
+      padding: 0 4px;
+      border-radius: 2px;
+      border: none;
+      flex: 0 0 auto;
+    }
+
+    .prd-popover-title {
+      color: #1f2933;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    .prd-popover-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 24px;
+      height: 24px;
+      border: none;
+      border-radius: 2px;
+      background: transparent;
+      color: #555;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 22px;
+    }
+
+    .prd-popover-close:hover {
+      background: rgba(0, 0, 0, .08);
+    }
+
+    .prd-popover-body {
+      max-height: calc(min(680px, calc(100vh - 24px)) - 47px);
+      overflow: auto;
+      padding: 14px;
+      color: #262626;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .prd-popover-body p {
+      margin: 0 0 12px;
+    }
+
+    .prd-popover-body strong {
+      font-weight: 700;
+    }
+
+    .prd-popover-body em {
+      font-style: italic;
+    }
+
+    .prd-popover-body ul,
+    .prd-popover-body ol {
+      margin: 0 0 12px 20px;
+      padding: 0;
+    }
+
+    .prd-popover-body li {
+      margin: 4px 0;
+    }
+
+    .prd-popover-body blockquote {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-left: 4px solid #b8b8b8;
+      background: #e4e4e4;
+      color: #444;
+    }
+
+    .prd-popover-body h3 {
+      margin: 14px 0 8px;
+      color: #1f2933;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .prd-popover-body h3:first-child {
+      margin-top: 0;
+    }
+
+    .prd-dragging,
+    .prd-dragging * {
+      user-select: none;
+    }
+
+    .prd-dragging::after {
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      cursor: move;
+      content: "";
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="main">
+      <header class="header">
+        <div class="header-left">
+          <div class="collapse-btn" id="collapse-btn"><span>☰</span></div>
+          <div class="breadcrumb" id="breadcrumb"></div>
+        </div>
+        <div class="header-right">
+          <div class="user-info">
+            <img class="user-avatar" src="../assets/images/avatar-default.svg" alt="管理员">
+            <span class="user-name">超级管理员</span>
+          </div>
+        </div>
+      </header>
+      <div class="content" id="page-content"></div>
+    </main>
+  </div>
+  <script src="../assets/js/core.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script src="../assets/js/modules/task.js"></script>
+  <script>
+    (function () {
+      const PRD_ANNOTATIONS = [
+        {
+          id: 6,
+          moduleName: '详情顶部操作区',
+          selector: '.account-toolbar-actions',
+          markdown: `
+### 操作按钮：
+
+- **返回子项目配置**：返回 \`task/config.html\` 列表页，不保存当前未提交改动。
+- **新增动态字段**：在动态字段模板区追加一行字段，默认字段名为“新增字段”，字段类型为“文本”，是否必填为“否”。
+- **启用规则 / 停用规则**：按钮文案根据当前状态展示；停用中展示“启用规则”，启用中或草稿展示“停用规则”。
+- **保存并生效**：保存当前详情页所有配置，保存成功后对新发布任务立即生效。
+
+### 状态规则：
+
+- 🟢 启用中：顶部展示返回 / 新增动态字段 / 停用规则 / 保存并生效。
+- 🟡 草稿：顶部展示返回 / 新增动态字段 / 停用规则 / 保存并生效。
+- 🔴 停用中：顶部展示返回 / 新增动态字段 / 启用规则 / 保存并生效。
+- 启用或停用后必须更新最近修改时间，并写入配置历史。
+
+### 保存校验：
+
+- 点击保存前必须弹出二次确认：“确认保存当前服务子项目配置？保存后会对新发布任务立即生效。”
+- 强制投保开启时，保险产品不能为空，且不能为“不投保”。
+- 高风险项目保存时，安全须知不能为空。
+- 保存成功后写入操作日志，并同步刷新列表中的状态和最后修改时间。
+
+### 权限要求：
+
+- 运营专员（全权限）和超级管理员（全权限）可使用顶部操作。
+- 无权限或状态不允许时，按钮应禁用并说明原因，不允许静默隐藏。
+
+### 验收标准：
+
+- 停用中配置显示“启用规则”，其他状态显示“停用规则”。
+- 点击新增动态字段后，动态字段模板区出现一行默认字段。
+- 强制投保但未选具体保险产品时，保存失败并提示原因。
+- 高风险项目安全须知为空时，保存失败并提示原因。
+          `
+        },
+        {
+          id: 7,
+          moduleName: '项目基础信息表单',
+          selector: '.panel-stack .section-card:nth-child(1)',
+          markdown: `
+### 字段说明：
+
+- **任务大类**：下拉选择服务子项目所属任务大类；保存后影响 C 端发布目录归类。
+- **服务子项目名称**：运营可读名称，例如做PPT、医疗陪诊、搬家帮手。
+- **项目ID**：系统自动生成的服务子项目 ID，用于内部关联；不展示技术 Key 和版本号。
+- **展示状态**：枚举 🟢 启用中 / 🔴 停用中 / 🟡 草稿。
+- **参考价格区间**：前端展示用 min/max，格式为“最低价 - 最高价 元”。
+
+### 交互规则：
+
+- 修改任务大类时，同步更新配置归属标签。
+- 修改服务子项目名称后，列表页第一列同步展示最新名称。
+- 参考价格区间只作为 C 端展示参考，不等同于 PricingAdvisorAgent 的实时定价结果。
+- 展示状态变化应与顶部“启用规则 / 停用规则”按钮保持一致。
+
+### 状态规则：
+
+- 🟢 启用中：配置对新发布任务生效。
+- 🔴 停用中：该项目不可新发布；已存在待接单任务继续有效，已接单订单正常运行。
+- 🟡 草稿：配置未正式生效，可继续编辑。
+
+### 异常处理：
+
+- 服务子项目名称不能为空。
+- 项目ID不能为空，且不允许运营填写技术 Key 或版本号。
+- 参考价格区间必须是数字，最低价不得大于最高价。
+- 若修改任务大类导致项目不再属于原目录，列表筛选和 C 端目录应同步更新。
+
+### 验收标准：
+
+- 基础信息区展示任务大类、服务子项目名称、项目ID、展示状态、参考价格区间。
+- 修改基础信息后保存，返回列表可看到最新名称、状态、价格和更新时间。
+- 停用状态下，该配置不应出现在 C 端新发布入口。
+          `
+        },
+        {
+          id: 8,
+          moduleName: '保险安全认证区',
+          selector: '.panel-stack .section-card:nth-child(2)',
+          markdown: `
+### 字段说明：
+
+- **高风险标识**：控制该服务子项目是否按高风险项目处理。
+- **保险策略**：包含“强制投保”勾选项和保险产品下拉。
+- **认证要求**：按项目要求勾选学历认证、技能认证、紧急联系人。
+- **安全须知配置**：面向 C 端安全须知页或高风险确认弹窗展示的文案。
+
+### 交互规则：
+
+- 勾选高风险后，C 端发布或确认流程需要展示安全须知或高风险确认。
+- 勾选强制投保后，必须选择具体保险产品。
+- 取消强制投保后，保险产品仍可保留用于普通保险提示，但不得强制拦截发布。
+- 勾选学历 / 技能 / 紧急联系人后，服务者申请任务时必须完成对应认证。
+
+### 状态规则：
+
+- 高风险开启：展示高风险项目标签，并触发更严格的审核与保险提示。
+- 强制投保开启：保存时必须存在具体保险产品。
+- 认证要求至少默认包含实名；学历、技能、紧急联系人按勾选项追加。
+
+### 异常处理：
+
+- 高风险项目安全须知为空时，保存失败。
+- 强制投保但保险类型为空或为“不投保”时，保存失败。
+- 高风险配置变更必须提示“会影响已发布任务的接单校验”，需二次确认。
+- 安全须知不应为空泛文案，必须说明服务边界、时间地点、紧急联系人或保险提示中的关键项。
+
+### 验收标准：
+
+- 高风险勾选后，页面顶部标签切换为“高风险项目”。
+- 强制投保 + 不投保组合无法保存。
+- 高风险 + 空安全须知无法保存。
+- 勾选学历、技能或紧急联系人后，列表页认证要求列同步展示对应文案。
+          `
+        },
+        {
+          id: 9,
+          moduleName: '动态字段模板编辑器',
+          selector: '.panel-stack .section-card:nth-child(3)',
+          markdown: `
+### 字段说明：
+
+每一行动态字段只允许配置三项：
+
+1. **字段类型**：文本 / 多行文本 / 单选 / 多选 / 数字 / 日期 / 地址 / 附件 / 布尔。
+2. **对应内容**：字段展示名称或选项说明，例如医院名称、猫咪数量、楼层电梯情况。
+3. **是否必填**：必填 / 选填。
+
+### 交互规则：
+
+- 点击顶部“新增动态字段”后，在本区域追加一行默认字段。
+- 字段类型切换后，应保留当前字段名称和必填状态。
+- 字段名称输入后实时写入当前配置缓存。
+- 是否必填切换后实时写入当前配置缓存。
+
+### 联动逻辑：
+
+- 动态字段模板会影响 C 端发布页“其他信息”区域。
+- 不同服务子项目可拥有不同动态字段，不应复用类目级模板替代项目级字段。
+- 字段模板只描述发单所需结构化信息，不承载取消策略、结算策略或风控处置策略。
+
+### 异常处理：
+
+- 字段名称不能为空；保存前应阻断空字段名。
+- 字段类型必须属于允许枚举，不能提交未知类型。
+- 动态字段没有配置删除入口时，不允许通过隐藏字段模拟删除。
+- 取消与结算策略由系统固定规则控制，本区域不得出现对应配置项。
+
+### 验收标准：
+
+- 新增字段后出现默认“文本 / 新增字段 / 选填”行。
+- 字段类型下拉包含 9 种允许类型。
+- 保存后 C 端发布页读取到该项目最新动态字段。
+- 页面未出现取消策略或结算策略配置控件。
+          `
+        }
+      ];
+
+      const openPopovers = new Map();
+      let draggingState = null;
+      let mountScheduled = false;
+
+      function mountPrdAnnotations() {
+        document.querySelectorAll('.prd-badge[data-prd-badge]').forEach(badge => badge.remove());
+
+        PRD_ANNOTATIONS.forEach(annotation => {
+          const target = document.querySelector(annotation.selector);
+          if (!target) return;
+
+          const badge = document.createElement('button');
+          badge.type = 'button';
+          badge.className = 'prd-badge';
+          badge.dataset.prdBadge = String(annotation.id);
+          badge.setAttribute('aria-label', `[${annotation.id}] 需求描述：${annotation.moduleName}`);
+          badge.textContent = String(annotation.id);
+          badge.addEventListener('mouseenter', event => {
+            event.stopPropagation();
+            openPrdPopover(annotation, badge);
+          });
+          badge.addEventListener('click', event => {
+            event.stopPropagation();
+          });
+          document.body.appendChild(badge);
+          positionBadge(badge, target);
+        });
+      }
+
+      function scheduleMount() {
+        if (mountScheduled) return;
+        mountScheduled = true;
+        window.requestAnimationFrame(() => {
+          mountScheduled = false;
+          mountPrdAnnotations();
+        });
+      }
+
+      function positionBadge(badge, target) {
+        const rect = target.getBoundingClientRect();
+        badge.style.left = `${rect.right + window.scrollX - 4}px`;
+        badge.style.top = `${rect.top + window.scrollY - 8}px`;
+      }
+
+      function syncBadgePositions() {
+        PRD_ANNOTATIONS.forEach(annotation => {
+          const badge = document.querySelector(`[data-prd-badge="${annotation.id}"]`);
+          const target = document.querySelector(annotation.selector);
+          if (badge && target) positionBadge(badge, target);
+        });
+      }
+
+      function openPrdPopover(annotation, badge) {
+        if (openPopovers.has(annotation.id)) return;
+
+        const popover = document.createElement('section');
+        popover.className = 'prd-popover';
+        popover.dataset.prdPopover = String(annotation.id);
+        popover.innerHTML = `
+          <div class="prd-popover-header">
+            <span class="prd-badge-inline">${annotation.id}</span>
+            <div class="prd-popover-title">[${annotation.id}] 需求描述：${escapeHtml(annotation.moduleName)}</div>
+          </div>
+          <button class="prd-popover-close" type="button" aria-label="关闭">×</button>
+          <div class="prd-popover-body">${renderMarkdown(annotation.markdown)}</div>
+        `;
+
+        popover.addEventListener('click', event => event.stopPropagation());
+        popover.addEventListener('mousedown', event => event.stopPropagation());
+        popover.querySelector('.prd-popover-close').addEventListener('click', event => {
+          event.stopPropagation();
+          openPopovers.delete(annotation.id);
+          popover.remove();
+        });
+
+        document.body.appendChild(popover);
+        positionPopover(popover, badge);
+        makeDraggable(popover, popover.querySelector('.prd-popover-header'));
+        openPopovers.set(annotation.id, popover);
+      }
+
+      function positionPopover(popover, badge) {
+        const badgeRect = badge.getBoundingClientRect();
+        const gap = 8;
+        let left = badgeRect.left + window.scrollX - popover.offsetWidth;
+        let top = badgeRect.bottom + window.scrollY + gap;
+
+        if (left < window.scrollX + 12) left = badgeRect.right + window.scrollX + gap;
+        if (left + popover.offsetWidth > window.scrollX + window.innerWidth - 12) {
+          left = window.scrollX + window.innerWidth - popover.offsetWidth - 12;
+        }
+        if (top + popover.offsetHeight > window.scrollY + window.innerHeight - 12) {
+          top = badgeRect.top + window.scrollY - popover.offsetHeight - gap;
+        }
+        if (top < window.scrollY + 12) top = window.scrollY + 12;
+
+        popover.style.left = `${left}px`;
+        popover.style.top = `${top}px`;
+      }
+
+      function makeDraggable(popover, handle) {
+        handle.addEventListener('mousedown', event => {
+          draggingState = {
+            popover,
+            startX: event.clientX,
+            startY: event.clientY,
+            originLeft: popover.offsetLeft,
+            originTop: popover.offsetTop,
+            suppressClickUntil: Date.now() + 200
+          };
+          document.body.classList.add('prd-dragging');
+          event.preventDefault();
+          event.stopPropagation();
+        });
+      }
+
+      function handleDragMove(event) {
+        if (!draggingState) return;
+        const { popover, startX, startY, originLeft, originTop } = draggingState;
+        const maxLeft = window.scrollX + window.innerWidth - popover.offsetWidth - 8;
+        const maxTop = window.scrollY + window.innerHeight - popover.offsetHeight - 8;
+        const nextLeft = Math.min(Math.max(window.scrollX + 8, originLeft + event.clientX - startX), maxLeft);
+        const nextTop = Math.min(Math.max(window.scrollY + 8, originTop + event.clientY - startY), maxTop);
+        popover.style.left = `${nextLeft}px`;
+        popover.style.top = `${nextTop}px`;
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+      function handleDragEnd(event) {
+        if (!draggingState) return;
+        draggingState = null;
+        document.body.classList.remove('prd-dragging');
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+      function renderMarkdown(markdown) {
+        const lines = String(markdown || '').trim().split('\n');
+        const html = [];
+        let paragraph = [];
+        let listStack = [];
+
+        function flushParagraph() {
+          if (!paragraph.length) return;
+          html.push(`<p>${formatInline(paragraph.join(' '))}</p>`);
+          paragraph = [];
+        }
+
+        function closeLists(toLevel = -1) {
+          while (listStack.length > toLevel + 1) {
+            html.push(`</${listStack.pop()}>`);
+          }
+        }
+
+        lines.forEach(rawLine => {
+          const line = rawLine.replace(/\s+$/g, '');
+          const trimmed = line.trim();
+
+          if (!trimmed) {
+            flushParagraph();
+            closeLists();
+            return;
+          }
+
+          const headingMatch = trimmed.match(/^###\s+(.+)$/);
+          if (headingMatch) {
+            flushParagraph();
+            closeLists();
+            html.push(`<h3>${formatInline(headingMatch[1])}</h3>`);
+            return;
+          }
+
+          if (trimmed.startsWith('>')) {
+            flushParagraph();
+            closeLists();
+            html.push(`<blockquote>${formatInline(trimmed.replace(/^>\s?/, ''))}</blockquote>`);
+            return;
+          }
+
+          const listMatch = line.match(/^(\s*)([-*]|\d+\.)\s+(.+)$/);
+          if (listMatch) {
+            flushParagraph();
+            const level = Math.floor(listMatch[1].length / 2);
+            const tag = /\d+\./.test(listMatch[2]) ? 'ol' : 'ul';
+            while (listStack.length > level && listStack.length) {
+              html.push(`</${listStack.pop()}>`);
+            }
+            while (listStack.length <= level) {
+              html.push(`<${tag}>`);
+              listStack.push(tag);
+            }
+            html.push(`<li>${formatInline(listMatch[3])}</li>`);
+            return;
+          }
+
+          paragraph.push(trimmed);
+        });
+
+        flushParagraph();
+        closeLists();
+        return html.join('');
+      }
+
+      function formatInline(value) {
+        return escapeHtml(value)
+          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.+?)\*/g, '<em>$1</em>')
+          .replace(/`(.+?)`/g, '<code>$1</code>');
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      window.addEventListener('DOMContentLoaded', () => {
+        scheduleMount();
+        const content = document.getElementById('page-content');
+        if (content) {
+          new MutationObserver(scheduleMount).observe(content, { childList: true, subtree: true });
+        }
+      });
+      window.addEventListener('resize', syncBadgePositions);
+      window.addEventListener('scroll', syncBadgePositions, true);
+      document.addEventListener('mousemove', handleDragMove);
+      document.addEventListener('mouseup', handleDragEnd);
+      document.addEventListener('click', event => {
+        if (draggingState && Date.now() < draggingState.suppressClickUntil) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }, true);
+    })();
+  </script>
+</body>
+</html>

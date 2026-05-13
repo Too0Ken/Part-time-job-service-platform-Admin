@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>服务子项目配置 - 校园兼职服务平台管理后台</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/reset.css">
+  <link rel="stylesheet" href="../assets/css/base.css">
+  <link rel="stylesheet" href="../assets/css/layout.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <link rel="stylesheet" href="../assets/css/pages.css">
+  <style>
+    .prd-badge {
+      position: absolute;
+      display: inline-block;
+      vertical-align: top;
+      background: rgb(250, 173, 20);
+      color: #fff;
+      font-size: 10px;
+      font-weight: bold;
+      line-height: 14px;
+      padding: 0 4px;
+      border-radius: 2px;
+      border: none;
+      cursor: pointer;
+      z-index: 9999;
+    }
+
+    .prd-popover {
+      position: absolute;
+      background: #f0efef;
+      border-radius: 4px;
+      width: 450px;
+      max-width: calc(100vw - 24px);
+      max-height: min(680px, calc(100vh - 24px));
+      box-shadow: 0 12px 34px rgba(0, 0, 0, .18);
+      z-index: 9999;
+      overflow: hidden;
+    }
+
+    .prd-popover-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 40px 12px 14px;
+      border-bottom: 1px solid #d8d8d8;
+      cursor: move;
+      user-select: none;
+    }
+
+    .prd-popover-header .prd-badge-inline {
+      display: inline-block;
+      vertical-align: top;
+      background: rgb(250, 173, 20);
+      color: #fff;
+      font-size: 10px;
+      font-weight: bold;
+      line-height: 14px;
+      padding: 0 4px;
+      border-radius: 2px;
+      border: none;
+      flex: 0 0 auto;
+    }
+
+    .prd-popover-title {
+      color: #1f2933;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    .prd-popover-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 24px;
+      height: 24px;
+      border: none;
+      border-radius: 2px;
+      background: transparent;
+      color: #555;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 22px;
+    }
+
+    .prd-popover-close:hover {
+      background: rgba(0, 0, 0, .08);
+    }
+
+    .prd-popover-body {
+      max-height: calc(min(680px, calc(100vh - 24px)) - 47px);
+      overflow: auto;
+      padding: 14px;
+      color: #262626;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .prd-popover-body p {
+      margin: 0 0 12px;
+    }
+
+    .prd-popover-body strong {
+      font-weight: 700;
+    }
+
+    .prd-popover-body em {
+      font-style: italic;
+    }
+
+    .prd-popover-body ul,
+    .prd-popover-body ol {
+      margin: 0 0 12px 20px;
+      padding: 0;
+    }
+
+    .prd-popover-body li {
+      margin: 4px 0;
+    }
+
+    .prd-popover-body blockquote {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-left: 4px solid #b8b8b8;
+      background: #e4e4e4;
+      color: #444;
+    }
+
+    .prd-popover-body h3 {
+      margin: 14px 0 8px;
+      color: #1f2933;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .prd-popover-body h3:first-child {
+      margin-top: 0;
+    }
+
+    .prd-dragging,
+    .prd-dragging * {
+      user-select: none;
+    }
+
+    .prd-dragging::after {
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      cursor: move;
+      content: "";
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="main">
+      <header class="header">
+        <div class="header-left">
+          <div class="collapse-btn" id="collapse-btn"><span>☰</span></div>
+          <div class="breadcrumb" id="breadcrumb"></div>
+        </div>
+        <div class="header-right">
+          <div class="user-info">
+            <img class="user-avatar" src="../assets/images/avatar-default.svg" alt="管理员">
+            <span class="user-name">超级管理员</span>
+          </div>
+        </div>
+      </header>
+      <div class="content" id="page-content"></div>
+    </main>
+  </div>
+  <script src="../assets/js/core.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script src="../assets/js/modules/task.js"></script>
+  <script>
+    (function () {
+      const PRD_ANNOTATIONS = [
+        {
+          id: 1,
+          moduleName: '页面标题与菜单定位',
+          selector: '#breadcrumb',
+          markdown: `
+### 显示样式：
+
+- 页面标题应明确为 **服务子项目配置**。
+- 菜单层级应位于 **任务管理 / 服务子项目配置**。
+- 左侧菜单中“服务子项目配置”应处于选中态。
+- 页面只展示服务子项目规则列表，不混入任务大类配置列表。
+
+### 业务定义：
+
+- 后台发布目录拆成两个菜单维护：
+  - **任务大类配置**：维护大类名称、排序和状态，支持自定义大类。
+  - **服务子项目配置**：维护具体任务项目的基础信息、高风险标识、保险规则、动态字段模板、安全须知和参考价格范围。
+- 服务子项目配置变更 **无需发版即可调整**，C 端发布目录读取后台配置结果。
+- 每条配置必须对应具体任务项目，不允许用“类目聚合规则”替代具体项目配置。
+
+### 权限逻辑：
+
+- **运营专员（全权限）**：可查看、筛选、导出、新建、进入详情、启用/停用和保存配置。
+- **超级管理员（全权限）**：可查看、筛选、导出、新建、进入详情、启用/停用和保存配置。
+- 未授权角色不应展示该菜单；若直接访问 URL，应被权限层拦截。
+
+### 联动逻辑：
+
+- C 端发布页的项目目录、动态字段、安全须知、高风险确认和参考价格，均应读取服务子项目配置。
+- 服务者接单资格校验中的学历认证、技能认证、紧急联系人，也应由具体子项目配置决定。
+
+### 异常逻辑：
+
+> **取消与结算策略不开放配置**：取消和结算策略由系统按订单状态机、平台统一退款/结算规则写死，本页不展示、不编辑、不导出该配置项。
+
+- 配置页面不能出现“版本号”“技术 Key”等容易让运营误解为发版版本或技术映射的字段。
+
+### 验收标准：
+
+- 进入 \`task/config.html\` 后，标题和面包屑能明确定位到服务子项目配置。
+- 页面不展示取消策略、结算策略、技术 Key、版本号。
+- 无权限账号不能通过菜单或 URL 完成配置操作。
+          `
+        },
+        {
+          id: 2,
+          moduleName: '配置列表字段与规则',
+          selector: '.table-container',
+          markdown: `
+### 字段说明：
+
+- **任务大类 / 子分类**：第一行展示服务子项目名称，第二行展示归属任务大类或子分类。
+- **项目编号**：展示系统自动生成的服务子项目 ID；下方展示维护人。
+- **认证要求**：至少展示“实名”，并根据配置追加“学历 / 技能 / 紧急联系人”。
+- **价格区间**：展示参考价格范围，格式为 \`¥min - ¥max\`。
+- **风险 / 保险**：展示常规或高风险；下方展示保险类型，强制投保时追加“强制保险”。
+- **状态**：展示 🟢 启用中、🔴 停用中、🟡 草稿。
+- **最近更新**：展示最后修改时间；下方展示维护人。
+- **操作**：固定展示在最右侧，承载配置详情和启停动作。
+
+### 目录范围：
+
+首版维护 C 端 **7 个一级入口与 18 个具体任务项目**：
+
+- 技能类：做PPT、写简历、家教、教练。
+- 体能类：跑腿、陪跑步、排队。
+- 专业服务类：上门喂猫、医疗陪诊。
+- 活动协助类：婚庆协助、展会协助、摄影助理。
+- 生活服务类：搬家帮手、家电清洁、居家收纳。
+- 陪伴照护类：遛狗、老人陪伴、接送陪同。
+
+### 展示规则：
+
+- 列表必须展示 **具体任务项目配置规则**。
+- 不得只展示类目级规则，不得用类目聚合规则替代具体项目配置。
+- **同一项目的最新生效规则默认置顶**。
+- 每页通过后台统一分页组件展示，分页文案为“共 N 条服务子项目配置”。
+- 列表字段要与详情页配置项保持一致，保存后列表同步展示最新状态和最后修改时间。
+
+### 状态规则：
+
+- 🟢 启用中：规则当前可生效，并可进入详情或停用。
+- 🔴 停用中：规则当前不生效，并可进入详情或启用。
+- 🟡 草稿：规则未正式生效，可进入详情继续补全，也可停用。
+- 状态颜色和文案必须全后台统一，不允许各页面自行定义。
+
+### 联动逻辑：
+
+- 认证要求读取 \`needsDegree / needsSkill / needEmergency\` 等配置，并始终包含实名。
+- 风险与保险读取 \`highRisk / insuranceType / forceInsurance\`。
+- 价格区间读取 \`priceMin / priceMax\`，用于 C 端前端展示，不等同于 PricingAdvisorAgent 的实时定价结果。
+- 最近更新和维护人用于运营追踪，不替代操作日志。
+
+### 异常逻辑：
+
+> 若某条配置缺少项目编号、项目名称、归属大类或价格区间，列表不应静默展示为空，应在保存阶段阻断或在详情页提示补全。
+
+### 验收标准：
+
+- 列表表头包含任务大类/子分类、项目编号、认证要求、价格区间、风险/保险、状态、最近更新、操作。
+- 任一高风险配置在风险/保险列中可被明确识别。
+- 任一需要学历、技能或紧急联系人认证的配置，认证要求列必须展示对应文案。
+- 分页文案展示总条数，切换分页不丢失当前筛选条件。
+          `
+        },
+        {
+          id: 3,
+          moduleName: '搜索与筛选区',
+          selector: '.filter-panel',
+          markdown: `
+### 搜索框：
+
+- 输入项目 ID：走精确或包含匹配，用于快速定位系统生成的服务子项目编号。
+- 输入项目名称：走模糊匹配，例如“陪诊”“PPT”“搬家”。
+- 输入类目：走模糊匹配，可命中任务大类或子分类文本。
+- 输入维护人：走模糊匹配，用于运营排查配置负责人。
+- 搜索框为空时，不对关键词条件做限制。
+
+### 结构化筛选项：
+
+- 任务大类下拉：默认“全部大类”。
+- 任务项目下拉：默认“全部任务项目”。
+- 状态下拉：默认“全部状态”，可选：
+  - 🟢 启用中
+  - 🔴 停用中
+  - 🟡 草稿
+- 风险类型下拉：默认“风险类型”，可选高风险 / 常规。
+
+### 交互规则：
+
+- 点击“搜索”执行查询，执行后 **保留当前筛选条件**，不清空输入。
+- 点击“重置”清空关键词、任务大类、任务项目、状态、风险类型，并重新查询全部列表。
+- 切换任务大类后，任务项目筛选项必须重置为“全部任务项目”，避免保留旧类目下的项目值。
+- 执行搜索或重置后，分页回到第一页。
+
+### 联动逻辑：
+
+- 任务大类与任务项目存在前端联动：任务项目下拉只展示当前大类下的项目。
+- “常用任务”仅作为快捷聚合筛选，不单独生成项目归属；具体项目仍回落到其标准类目。
+- 多筛选条件同时存在时使用 **AND 逻辑**。
+- 同一维度内若未来支持多选，则同维度内部使用 OR 逻辑。
+
+### 异常逻辑：
+
+- 任一下拉为“全部”或空值时，不限制对应条件。
+- 如果任务大类切换后原任务项目已不在新范围内，必须清空项目值。
+- 如果筛选结果为空，列表展示空态和总数 0，不保留上一页旧数据。
+
+### 备注：
+
+> 通用规则：筛选面板代表高级条件，搜索框代表主搜索；主搜索与结构化筛选条件同时生效，不能互相覆盖。
+
+### 验收标准：
+
+- 输入关键词并点击搜索后，列表按项目 ID、项目名称、类目或维护人过滤。
+- 切换任务大类后，任务项目下拉重置为空，并只展示当前大类下项目。
+- 点击重置后，关键词和所有下拉筛选清空，分页回到第一页。
+- 筛选无结果时展示空列表和总数 0，不沿用旧数据。
+          `
+        },
+        {
+          id: 4,
+          moduleName: '行操作列与详情页联动',
+          selector: '.table thead th.action-cell',
+          markdown: `
+### 操作按钮展示：
+
+- 行内操作固定展示在列表最右侧。
+- 每行展示“配置详情”。
+- 第二个按钮根据当前状态展示“启用”或“停用”。
+
+### 操作状态分三类：
+
+- 🟢 启用中 → 配置详情 / 停用。
+- 🟡 草稿 → 配置详情 / 停用。
+- 🔴 停用中 → 配置详情 / 启用。
+
+### 配置详情：
+
+- 点击“配置详情”进入 \`task/config-detail.html?config={config.key}\`。
+- 详情页展示项目基础信息、高风险配置、保险策略、安全须知、认证要求、动态字段模板和参考价格范围。
+- 详情页不展示 Key 和版本号，避免运营误解为技术映射或发版版本。
+
+### 详情页操作规则：
+
+- 🟢 启用中、🟡 草稿：返回子项目配置 / 新增动态字段 / 停用规则 / 保存并生效。
+- 🔴 停用中：返回子项目配置 / 新增动态字段 / 启用规则 / 保存并生效。
+- 保存后返回规则列表，列表同步展示最新状态与最后修改时间。
+
+### 高风险与保险校验：
+
+- \`is_high_risk\` 控制是否展示安全须知弹窗。
+- \`insurance_required\` 控制是否强制购买保险。
+- 当 \`insurance_required=true\` 时，必须选择具体保险产品，不能选择“无/不投保”。
+- 高风险项目保存时必须填写安全须知内容。
+- 高风险配置变更必须提醒“会影响已发布任务的接单校验”，需二次确认。
+
+### 动态字段模板：
+
+每个字段仅配置：
+
+1. 字段类型：文本 / 多行文本 / 单选 / 多选 / 数字 / 日期 / 地址 / 附件 / 布尔。
+2. 对应内容：字段展示名称或选项说明。
+3. 是否必填。
+
+### 异常逻辑：
+
+- 启用或停用后必须更新最近修改时间。
+- 操作结果应写入操作日志，不能只改列表状态。
+- 无权限或状态不允许时，操作按钮应禁用并说明原因，不应直接隐藏。
+
+### 备注：
+
+> 取消与结算策略不允许后台配置，详情页也不能出现对应配置项。
+
+### 验收标准：
+
+- 启用中和草稿行展示“停用”，停用中行展示“启用”。
+- 点击配置详情进入对应 \`config.key\` 的详情页。
+- 启用/停用后，列表状态、最近更新时间和维护人同步刷新。
+- 强制投保但未选择具体保险产品时，保存被阻断并提示原因。
+- 高风险项目安全须知为空时，保存被阻断并提示原因。
+          `
+        },
+        {
+          id: 5,
+          moduleName: '顶部操作区',
+          selector: '.account-toolbar-actions',
+          markdown: `
+### 导出规则列表：
+
+- 导出当前筛选结果对应的服务子项目配置清单。
+- 导出字段应覆盖：任务大类/子分类、项目编号、项目名称、认证要求、价格区间、风险与保险、状态、最近更新、维护人。
+- 数据量较小时可同步生成下载；数据量较大时应创建异步导出任务。
+- 导出用于运营核对 7 个一级入口、18 个具体任务项目、风险、保险、价格和认证覆盖。
+
+### 新建配置规则：
+
+创建流程：
+
+1. 点击“新建配置规则”。
+2. 系统创建一条草稿配置。
+3. 进入 \`task/config-detail.html?config={newKey}\`。
+4. 默认项目名称为“待命名服务子项目”。
+5. 默认任务大类为技能类，状态为 🟡 草稿。
+6. 系统自动生成服务子项目 ID，不要求运营手动填写技术 Key。
+
+### 新建配置默认值：
+
+- 任务大类归属：默认技能类，可在详情页调整。
+- 服务子项目 ID：系统自动生成。
+- 项目名称：待命名服务子项目。
+- 参考价格区间：默认提供可编辑 min/max。
+- 状态：🟡 草稿。
+- 风险：默认常规。
+- 保险：默认不强制投保，保险类型可编辑。
+- 安全须知：提供默认文案，后续可按子项目改写。
+- 认证要求：实名为基础要求，学历/技能/紧急联系人按需勾选。
+- 动态字段模板：至少保留可新增字段入口。
+
+### 权限逻辑：
+
+- 运营专员（全权限）和超级管理员（全权限）可执行导出和新建。
+- 无权限角色不应看到新建入口；若通过接口或 URL 访问，应被权限层拦截。
+
+### 异常逻辑：
+
+- 导出任务创建失败时，必须提示失败原因。
+- 新建配置失败时，不能跳转详情页，也不能生成半条脏数据。
+- 新建配置保存前为草稿，不应影响 C 端发布目录。
+
+### 备注：
+
+> 顶部操作区只处理配置规则导出和新建，不处理任务大类导出；任务大类导出归属于“任务大类配置”页面。
+
+### 验收标准：
+
+- 点击“新建配置规则”后进入新草稿详情页。
+- 新草稿默认项目名称为“待命名服务子项目”，状态为草稿。
+- 点击“导出规则列表”后给出导出任务创建反馈。
+- 无权限角色不展示新建入口；接口层也不能创建配置。
+          `
+        }
+      ];
+
+      const openPopovers = new Map();
+      let draggingState = null;
+      let mountScheduled = false;
+
+      function mountPrdAnnotations() {
+        document.querySelectorAll('.prd-badge[data-prd-badge]').forEach(badge => badge.remove());
+
+        PRD_ANNOTATIONS.forEach(annotation => {
+          const target = document.querySelector(annotation.selector);
+          if (!target) return;
+
+          const badge = document.createElement('button');
+          badge.type = 'button';
+          badge.className = 'prd-badge';
+          badge.dataset.prdBadge = String(annotation.id);
+          badge.setAttribute('aria-label', `[${annotation.id}] 需求描述：${annotation.moduleName}`);
+          badge.textContent = String(annotation.id);
+          badge.addEventListener('mouseenter', event => {
+            event.stopPropagation();
+            openPrdPopover(annotation, badge);
+          });
+          badge.addEventListener('click', event => {
+            event.stopPropagation();
+          });
+          document.body.appendChild(badge);
+          positionBadge(badge, target);
+        });
+      }
+
+      function scheduleMount() {
+        if (mountScheduled) return;
+        mountScheduled = true;
+        window.requestAnimationFrame(() => {
+          mountScheduled = false;
+          mountPrdAnnotations();
+        });
+      }
+
+      function positionBadge(badge, target) {
+        const rect = target.getBoundingClientRect();
+        badge.style.left = `${rect.right + window.scrollX - 4}px`;
+        badge.style.top = `${rect.top + window.scrollY - 8}px`;
+      }
+
+      function syncBadgePositions() {
+        PRD_ANNOTATIONS.forEach(annotation => {
+          const badge = document.querySelector(`[data-prd-badge="${annotation.id}"]`);
+          const target = document.querySelector(annotation.selector);
+          if (badge && target) positionBadge(badge, target);
+        });
+      }
+
+      function openPrdPopover(annotation, badge) {
+        if (openPopovers.has(annotation.id)) return;
+
+        const popover = document.createElement('section');
+        popover.className = 'prd-popover';
+        popover.dataset.prdPopover = String(annotation.id);
+        popover.innerHTML = `
+          <div class="prd-popover-header">
+            <span class="prd-badge-inline">${annotation.id}</span>
+            <div class="prd-popover-title">[${annotation.id}] 需求描述：${escapeHtml(annotation.moduleName)}</div>
+          </div>
+          <button class="prd-popover-close" type="button" aria-label="关闭">×</button>
+          <div class="prd-popover-body">${renderMarkdown(annotation.markdown)}</div>
+        `;
+
+        popover.addEventListener('click', event => event.stopPropagation());
+        popover.addEventListener('mousedown', event => event.stopPropagation());
+        popover.querySelector('.prd-popover-close').addEventListener('click', event => {
+          event.stopPropagation();
+          openPopovers.delete(annotation.id);
+          popover.remove();
+        });
+
+        document.body.appendChild(popover);
+        positionPopover(popover, badge);
+        makeDraggable(popover, popover.querySelector('.prd-popover-header'));
+        openPopovers.set(annotation.id, popover);
+      }
+
+      function positionPopover(popover, badge) {
+        const badgeRect = badge.getBoundingClientRect();
+        const gap = 8;
+        let left = badgeRect.left + window.scrollX - popover.offsetWidth;
+        let top = badgeRect.bottom + window.scrollY + gap;
+
+        if (left < window.scrollX + 12) left = badgeRect.right + window.scrollX + gap;
+        if (left + popover.offsetWidth > window.scrollX + window.innerWidth - 12) {
+          left = window.scrollX + window.innerWidth - popover.offsetWidth - 12;
+        }
+        if (top + popover.offsetHeight > window.scrollY + window.innerHeight - 12) {
+          top = badgeRect.top + window.scrollY - popover.offsetHeight - gap;
+        }
+        if (top < window.scrollY + 12) top = window.scrollY + 12;
+
+        popover.style.left = `${left}px`;
+        popover.style.top = `${top}px`;
+      }
+
+      function makeDraggable(popover, handle) {
+        handle.addEventListener('mousedown', event => {
+          draggingState = {
+            popover,
+            startX: event.clientX,
+            startY: event.clientY,
+            originLeft: popover.offsetLeft,
+            originTop: popover.offsetTop,
+            suppressClickUntil: Date.now() + 200
+          };
+          document.body.classList.add('prd-dragging');
+          event.preventDefault();
+          event.stopPropagation();
+        });
+      }
+
+      function handleDragMove(event) {
+        if (!draggingState) return;
+        const { popover, startX, startY, originLeft, originTop } = draggingState;
+        const maxLeft = window.scrollX + window.innerWidth - popover.offsetWidth - 8;
+        const maxTop = window.scrollY + window.innerHeight - popover.offsetHeight - 8;
+        const nextLeft = Math.min(Math.max(window.scrollX + 8, originLeft + event.clientX - startX), maxLeft);
+        const nextTop = Math.min(Math.max(window.scrollY + 8, originTop + event.clientY - startY), maxTop);
+        popover.style.left = `${nextLeft}px`;
+        popover.style.top = `${nextTop}px`;
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+      function handleDragEnd(event) {
+        if (!draggingState) return;
+        draggingState = null;
+        document.body.classList.remove('prd-dragging');
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+      function renderMarkdown(markdown) {
+        const lines = String(markdown || '').trim().split('\n');
+        const html = [];
+        let paragraph = [];
+        let listStack = [];
+
+        function flushParagraph() {
+          if (!paragraph.length) return;
+          html.push(`<p>${formatInline(paragraph.join(' '))}</p>`);
+          paragraph = [];
+        }
+
+        function closeLists(toLevel = -1) {
+          while (listStack.length > toLevel + 1) {
+            html.push(`</${listStack.pop()}>`);
+          }
+        }
+
+        lines.forEach(rawLine => {
+          const line = rawLine.replace(/\s+$/g, '');
+          const trimmed = line.trim();
+
+          if (!trimmed) {
+            flushParagraph();
+            closeLists();
+            return;
+          }
+
+          const headingMatch = trimmed.match(/^###\s+(.+)$/);
+          if (headingMatch) {
+            flushParagraph();
+            closeLists();
+            html.push(`<h3>${formatInline(headingMatch[1])}</h3>`);
+            return;
+          }
+
+          if (trimmed.startsWith('>')) {
+            flushParagraph();
+            closeLists();
+            html.push(`<blockquote>${formatInline(trimmed.replace(/^>\s?/, ''))}</blockquote>`);
+            return;
+          }
+
+          const listMatch = line.match(/^(\s*)([-*]|\d+\.)\s+(.+)$/);
+          if (listMatch) {
+            flushParagraph();
+            const level = Math.floor(listMatch[1].length / 2);
+            const tag = /\d+\./.test(listMatch[2]) ? 'ol' : 'ul';
+            while (listStack.length > level && listStack.length) {
+              html.push(`</${listStack.pop()}>`);
+            }
+            while (listStack.length <= level) {
+              html.push(`<${tag}>`);
+              listStack.push(tag);
+            }
+            html.push(`<li>${formatInline(listMatch[3])}</li>`);
+            return;
+          }
+
+          paragraph.push(trimmed);
+        });
+
+        flushParagraph();
+        closeLists();
+        return html.join('');
+      }
+
+      function formatInline(value) {
+        return escapeHtml(value)
+          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.+?)\*/g, '<em>$1</em>')
+          .replace(/`(.+?)`/g, '<code>$1</code>');
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      window.addEventListener('DOMContentLoaded', () => {
+        scheduleMount();
+        const content = document.getElementById('page-content');
+        if (content) {
+          new MutationObserver(scheduleMount).observe(content, { childList: true, subtree: true });
+        }
+      });
+      window.addEventListener('resize', syncBadgePositions);
+      window.addEventListener('scroll', syncBadgePositions, true);
+      document.addEventListener('mousemove', handleDragMove);
+      document.addEventListener('mouseup', handleDragEnd);
+      document.addEventListener('click', event => {
+        if (draggingState && Date.now() < draggingState.suppressClickUntil) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }, true);
+    })();
+  </script>
+</body>
+</html>

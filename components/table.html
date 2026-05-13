@@ -1,0 +1,86 @@
+<div class="table-container">
+  <div class="table-toolbar" style="padding: 16px; display: flex; justify-content: space-between; align-items: center;">
+    <div class="toolbar-left">
+      <div class="input-group">
+        <input class="input" type="text" placeholder="搜索ID/昵称/手机号" style="width: 200px;">
+        <button class="btn btn-primary" style="margin-left: 8px;">搜索</button>
+        <button class="btn" style="margin-left: 8px;">重置</button>
+      </div>
+    </div>
+    <div class="toolbar-right">
+      <button class="btn">导出</button>
+      <button class="btn btn-primary" style="margin-left: 8px;">+ 新增</button>
+    </div>
+  </div>
+  
+  <div class="table-tabs" style="padding: 0 16px; border-bottom: 1px solid var(--color-border-light);">
+    <div class="tab-item active">全部</div>
+    <div class="tab-item">正常</div>
+    <div class="tab-item">封禁</div>
+  </div>
+  
+  <table class="table">
+    <thead>
+      <tr>
+        <th class="checkbox-cell"><input type="checkbox"></th>
+        <th>ID</th>
+        <th>昵称</th>
+        <th>手机号</th>
+        <th>信用分</th>
+        <th>状态</th>
+        <th>注册时间</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="checkbox-cell"><input type="checkbox"></td>
+        <td>U10001</td>
+        <td>张同学</td>
+        <td>138****5678</td>
+        <td>95</td>
+        <td><span class="tag tag-success">正常</span></td>
+        <td>2026-04-20 10:30</td>
+        <td class="action-cell">
+          <button class="btn btn-sm">查看</button>
+          <button class="btn btn-sm btn-danger" style="margin-left: 4px;">封禁</button>
+        </td>
+      </tr>
+      <tr>
+        <td class="checkbox-cell"><input type="checkbox"></td>
+        <td>U10002</td>
+        <td>李同学</td>
+        <td>139****1234</td>
+        <td>45</td>
+        <td><span class="tag tag-danger">封禁</span></td>
+        <td>2026-04-19 14:20</td>
+        <td class="action-cell">
+          <button class="btn btn-sm">查看</button>
+          <button class="btn btn-sm" style="margin-left: 4px;">解封</button>
+        </td>
+      </tr>
+      <tr>
+        <td class="checkbox-cell"><input type="checkbox"></td>
+        <td>U10003</td>
+        <td>王同学</td>
+        <td>137****9876</td>
+        <td>80</td>
+        <td><span class="tag tag-success">正常</span></td>
+        <td>2026-04-18 09:15</td>
+        <td class="action-cell">
+          <button class="btn btn-sm">查看</button>
+          <button class="btn btn-sm btn-danger" style="margin-left: 4px;">封禁</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  
+  <div style="padding: 16px;">
+    <div class="pagination">
+      <span class="pagination-info">共 3 条</span>
+      <div class="pagination-item disabled">‹</div>
+      <div class="pagination-item active">1</div>
+      <div class="pagination-item disabled">›</div>
+    </div>
+  </div>
+</div>

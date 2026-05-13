@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>校园兼职服务平台管理后台</title>
+</head>
+<body>
+  <script>
+    const nextPage = localStorage.getItem('admin_phase_a_logged_in') === '1'
+      ? 'dashboard/index.html'
+      : 'login/index.html';
+    window.location.replace(nextPage);
+  </script>
+</body>
+</html>
