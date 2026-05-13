@@ -5,6 +5,22 @@
     {
       "source": "/",
       "destination": "/index.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/:path*"
+    },
+    {
+      "source": "/admin/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/admin/:path*",
+      "destination": "/:path*"
     }
   ]
 }
